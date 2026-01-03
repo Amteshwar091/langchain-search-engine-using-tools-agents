@@ -31,7 +31,7 @@ The application uses an LLM (via Groq) as a "reasoning engine." Instead of just 
 
 ---
 
-## 🛠 Tech Stack
+##  Tech Stack
 
 | Component | Technology | Description |
 | :--- | :--- | :--- |
