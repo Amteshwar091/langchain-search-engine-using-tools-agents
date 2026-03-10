@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-
+from langchain_community.callbacks.streamlit import StreamlitCallbackHandler
 from langchain_groq import ChatGroq
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.document_loaders import WebBaseLoader
@@ -12,6 +12,7 @@ from langchain_classic.tools.retriever import create_retriever_tool
 from langchain_classic.agents import create_openai_tools_agent, AgentExecutor
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_classic import hub
+
 
 st.set_page_config(page_title="LangChain Search Agent", page_icon="🤖")
 
@@ -73,7 +74,8 @@ with st.spinner("Initializing tools..."):
 
 llm = ChatGroq(
     groq_api_key=groq_api_key,
-    model_name="openai/gpt-oss-120b"
+    model_name="openai/gpt-oss-120b",
+    streaming=True
 )
 
 prompt = hub.pull("hwchase17/openai-functions-agent")
@@ -94,11 +96,20 @@ if prompt_input := st.chat_input("Ask me anything..."):
         st.markdown(prompt_input)
 
     with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
-            try:
-                response = agent_executor.invoke({"input": prompt_input})
-                output_text = response["output"]
-                st.markdown(output_text)
-                st.session_state.messages.append({"role": "assistant", "content": output_text})
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
+        try:
+            st_callback = StreamlitCallbackHandler(st.container() )
+
+            response = agent_executor.invoke(
+                {"input": prompt_input}, 
+                {"callbacks": [st_callback]}
+                
+            )
+
+            output_text = response["output"]
+            st.markdown(output_text)
+            st.session_state.messages.append(
+                {"role": "assistant", "content": output_text}
+            )
+
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
